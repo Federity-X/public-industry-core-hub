@@ -20,7 +20,11 @@
 # SPDX-License-Identifier: Apache-2.0
 #################################################################################
 
-from pydantic import BaseModel, Field
+import re
+
+from pydantic import BaseModel, Field, field_validator
+
+_SAFE_FIELD_PATTERN = re.compile(r'^[A-Za-z0-9:._-]+$')
 
 
 class ShareDppRequest(BaseModel):
@@ -33,6 +37,13 @@ class ShareDppRequest(BaseModel):
         alias="businessPartnerNumber",
         description="The BPNL of the business partner to share the DPP with"
     )
+
+    @field_validator("dpp_id", "business_partner_number")
+    @classmethod
+    def no_control_characters(cls, v: str) -> str:
+        if not _SAFE_FIELD_PATTERN.match(v):
+            raise ValueError("Invalid characters in field")
+        return v
 
     class Config:
         populate_by_name = True
